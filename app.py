@@ -1,8 +1,73 @@
 from flask import Flask,request
-
+from db import stores,items
+from flask_smorest import abort
+import uuid
 app = Flask(__name__)
 
-#for storing data in memory
+
+
+@app.get("/stores")
+def get_stores():
+    return {"stores": list(stores.values())}    
+
+
+@app.post("/stores")
+def create_store():
+    stores_data = request.get_json()
+    if "name" not in stores_data:
+        abort(400, message="Bad request. 'name' is a required field.") #using abort from flask_smorest to handle bad request, replace - return {"message": "Bad request. 'name' is a required field."}, 400
+
+    for store in stores.values():
+        if store["name"] == stores_data["name"]:
+            abort(400, message=f"store with name '{stores_data['name']}' already exists.") #using abort from flask_smorest to handle bad request, replace - return {"message": f"store with name '{stores_data['name']}' already exists."}, 400
+    
+    store_id = uuid.uuid4().hex     #generating unique id for each store
+    new_store={**stores_data, "id": store_id}     #unpacking the stores_data dictionary and adding id key-value pair , replacing    new_store = {"id": store_id, "name": stores_data["name"], "items": []}
+    stores[store_id] = stores
+    return stores, 201
+
+@app.post("/items")
+def create_item():
+    item_data= request.get_json()
+    if ("name" not in item_data) or ("price" not in item_data) or ("store_id" not in item_data):
+        abort(400, message="Bad request. 'name', 'price' and 'store_id' are required fields.") #using abort from flask_smorest to handle bad request, replace - return {"message": "Bad request. 'name', 'price' and 'store_id' are required fields."}, 400
+
+    if item_data["store_id"] not in stores:
+        abort(404, message="store not found") #using abort from flask_smorest to handle not found, replace - return {"message": "store not found"}, 404
+    
+    for item in items.values():
+        if (item_data["name"] == item["name"]
+        and item_data["store_id"] == item["store_id"]):
+            abort(400, message=f"item with name '{item_data['name']}' already exists in store '{item_data['store_id']}'") #using abort from flask_smorest to handle bad request, replace - return {"message": f"item with name '{item_data['name']}' already exists in store '{item_data['store_id']}'"}, 400
+    
+    item_id = uuid.uuid4().hex
+    new_item = {**item_data, "id": item_id}   #replacing new_item = {"id": item_id, "name": item_data["name"], "price": item_data["price"], "store_id": item_data["store_id"]}
+    items[item_id] = new_item
+    
+@app.get("/items")
+def get_items():
+    return {"items": list(items.values())}
+
+
+@app.get("/stores/<string:store_id>")
+def get_store(store_id):
+    try:
+        return stores[store_id]
+    except IndexError:
+        abort(404, message="store not found")
+    
+
+@app.get("/items/<string:item_id>")
+def get_item(item_id):
+    try:
+        return items[item_id]
+    except KeyError:
+        abort(404, message="item not found")
+    
+       
+
+
+"""#for storing data in memory
 #for now we are not using any database
 #we will use a list of dictionaries to store our data
 #each store will be a dictionary with name and items
@@ -17,41 +82,43 @@ stores = [
         }]
 
     }
-]
+]""" #commenting this as we are using db.py now we can store it in the form of dictionary
 
-@app.get("/stores")     #http://127.0.0.1:5000/stores
-def get_stores():
-    return {"stores": stores}
+# @app.get("/stores")     #http://127.0.0.1:5000/stores
+# def get_stores():
+#     return {"stores": stores}
+   
 
-@app.post("/stores")
-def create_store():
-    request_data= request.get_json()
-    new_store = {"name": request_data["name"],"items": []}
-    stores.append(new_store)
-    return new_store,201
+# @app.post("/stores")
+# def create_store():
+#     request_data= request.get_json()
+#     new_store = {"name": request_data["name"],"items": []}
+#     stores.append(new_store)
+#     return new_store,201
+
+# @app.post("/stores/<string:name>/items")
+# def create_item_in_store(name):
+#     request_data=request.get_json()
+#     for store in stores:
+#         if store["name"]== name:
+#             new_item={ "name": request_data["name"],"price": request_data["price"]}
+#             store["items"].append(new_item)
+#             return new_item,201
+#     return {"message":"store not found"},404
+
+# @app.get("/stores/<string:name>")
+# def get_store(name):
+#     for store in stores:
+#         if store["name"]== name:
+#             return store
+#     return {"message":"store not found"},404
+    
+# @app.get("/stores/<string:name>/items")
+# def get_items_in_store(name):
+#     for store in stores:
+#         if store["name"]== name:
+#             return {"items": store["items"]}
+#     return {"message":"store not found"},404
 
 
-@app.post("/stores/<string:name>/items")
-def create_item_in_store(name):
-    request_data=request.get_json()
-    for store in stores:
-        if store["name"]== name:
-            new_item={ "name": request_data["name"],"price": request_data["price"]}
-            store["items"].append(new_item)
-            return new_item,201
-    return {"message":"store not found"},404
-
-
-@app.get("/stores/<string:name>")
-def get_store(name):
-    for store in stores:
-        if store["name"]== name:
-            return store
-    return {"message":"store not found"},404
-
-@app.get("/stores/<string:name>/items")
-def get_items_in_store(name):
-    for store in stores:
-        if store["name"]== name:
-            return {"items": store["items"]}
-    return {"message":"store not found"},404
+ ########################
