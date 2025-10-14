@@ -4,11 +4,18 @@ from flask_smorest import abort
 import uuid
 app = Flask(__name__)
 
-
+#CURD operations for stores and items
 
 @app.get("/stores")
 def get_stores():
     return {"stores": list(stores.values())}    
+
+@app.get("/stores/<string:store_id>")            #get specific store by id
+def get_store(store_id):
+    try:
+        return stores[store_id]
+    except IndexError:
+        abort(404, message="store not found")
 
 
 @app.post("/stores")
@@ -25,6 +32,40 @@ def create_store():
     new_store={**stores_data, "id": store_id}     #unpacking the stores_data dictionary and adding id key-value pair , replacing    new_store = {"id": store_id, "name": stores_data["name"], "items": []}
     stores[store_id] = stores
     return stores, 201
+
+@app.delete("/stores/<string:store_id>")     #delete specific store by id
+def delete_store(store_id):
+    try:
+        del stores[store_id]
+        return {"message": "store deleted"}
+    except KeyError:
+        abort(404, message="store not found")
+
+@app.put("/stores/<string:store_id>")        #update specific store by id
+def update_store(store_id):
+    new_store_data = request.get_json()
+    if "name" not in new_store_data:          #if name field is missing
+        abort(400, message="Bad request. 'name' is a required field.") #using abort from flask_smorest to handle bad request, replace - return {"message": "Bad request. 'name' is a required field."}, 400
+
+    try:
+        old_store = stores[store_id]   #explaining this line - getting the store from the stores dictionary using the store_id
+        old_store.update(new_store_data)  #explaining this line - updating the store with the new data from new_store_data dictionary
+        return old_store
+    except KeyError:
+        abort(404, message="store not found")
+
+
+
+@app.get("/items")
+def get_items():
+    return {"items": list(items.values())}
+
+@app.get("/items/<string:item_id>")        #get specific item by id
+def get_item(item_id):
+    try:
+        return items[item_id]
+    except KeyError:
+        abort(404, message="item not found")
 
 @app.post("/items")
 def create_item():
@@ -43,28 +84,40 @@ def create_item():
     item_id = uuid.uuid4().hex
     new_item = {**item_data, "id": item_id}   #replacing new_item = {"id": item_id, "name": item_data["name"], "price": item_data["price"], "store_id": item_data["store_id"]}
     items[item_id] = new_item
-    
-@app.get("/items")
-def get_items():
-    return {"items": list(items.values())}
-
-
-@app.get("/stores/<string:store_id>")
-def get_store(store_id):
+    return new_item, 201
+       
+@app.delete("/items/<string:item_id>")     #delete specific item by id
+def delete_item(item_id):
     try:
-        return stores[store_id]
-    except IndexError:
-        abort(404, message="store not found")
-    
-
-@app.get("/items/<string:item_id>")
-def get_item(item_id):
-    try:
-        return items[item_id]
+        del items[item_id]
+        return {"message": "item deleted"}
     except KeyError:
         abort(404, message="item not found")
+
+
+@app.put("/items/<string:item_id>")        #update specific item by id
+def update_item(item_id):
+    new_item_data = request.get_json()
+    if ("name" not in new_item_data) or ("price" not in new_item_data) or ("store_id" not in new_item_data):          #if any of the fields are missing
+        abort(400, message="Bad request. 'name', 'price' and 'store_id' are required fields.") #using abort from flask_smorest to handle bad request, replace - return {"message": "Bad request. 'name', 'price' and 'store_id' are required fields."}, 400
+
+    if new_item_data["store_id"] not in stores:
+        abort(404, message="store not found") #using abort from flask_smorest to handle not found, replace - return {"message": "store not found"}, 404
     
-       
+    try:
+        old_item = items[item_id]   #explaining this line - getting the item from the items dictionary using the item_id
+        old_item.update(new_item_data)  #explaining this line - updating the item with the new data from new_item_data dictionary
+        return old_item
+    except KeyError:
+        abort(404, message="item not found")
+
+
+
+
+
+
+
+
 
 
 """#for storing data in memory

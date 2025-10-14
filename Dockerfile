@@ -1,6 +1,11 @@
 FROM python:3.10
 EXPOSE 5000
 WORKDIR /app
-COPY . .
-RUN pip install flask
+COPY requirement.txt .
+#RUN pip install flask
+RUN pip install -r requirement.txt
+COPY . .                 
 CMD ["flask", "run", "--host", "0.0.0.0"]
+
+
+
