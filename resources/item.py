@@ -2,7 +2,7 @@ import uuid
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
 
-# from schemas import ItemSchema, ItemUpdateSchema
+from schemas import ItemSchema, ItemUpdateSchema
 from db import items
 
 blp = Blueprint("Items", __name__, description="Operations on items")
@@ -10,7 +10,7 @@ blp = Blueprint("Items", __name__, description="Operations on items")
 
 @blp.route("/item/<string:item_id>")
 class Item(MethodView):
-    # @blp.response(200, ItemSchema)
+    @blp.response(200, ItemSchema)
     def get(self, item_id):
         try:
             return items[item_id]
@@ -24,8 +24,8 @@ class Item(MethodView):
         except KeyError:
             abort(404, message="Item not found.")
 
-    # @blp.arguments(ItemUpdateSchema)
-    # @blp.response(200, ItemSchema)
+    @blp.arguments(ItemUpdateSchema)
+    @blp.response(200, ItemSchema)
     def put(self, item_data, item_id):
         try:
             item = items[item_id]
